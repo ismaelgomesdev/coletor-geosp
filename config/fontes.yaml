@@ -1,0 +1,221 @@
+# Fontes, camadas e parâmetros do coletor.
+# Para cadastrar uma camada nova, copie um bloco de "camadas", troque o id e preencha.
+#
+# Campo "verificacao":
+#   testado              baixado e processado com sucesso em 02/11/2026
+#   typename_confirmado  o typeName está no GetCapabilities do GeoSampa, mas a camada ainda não foi baixada
+#   a_confirmar          candidata, falta conferir antes de ativar (use "coletor descobrir" e "coletor inspecionar")
+
+projeto:
+  municipio: "São Paulo"
+  uf: "SP"
+  codigo_ibge: "3550308"
+  crs_final: 31983            # SIRGAS 2000 / UTM 23S, o mesmo do GeoSampa
+  schema_pg: sp
+  workspace_geoserver: sp_municipio
+  datastore_geoserver: postgis_sp
+  tolerancia_borda_m: 100     # folga entre o limite do IBGE e o da Prefeitura
+  wfs_srs_transporte: 4326    # CRS pedido ao WFS; depois reprojeta para crs_final
+
+fontes:
+  geosampa:
+    nome: "GeoSampa - Mapa Digital da Cidade de São Paulo"
+    orgao: "Prefeitura do Município de São Paulo, SMUL / Coordenadoria de Produção e Análise de Informação (Geoinfo)"
+    portal: "https://geosampa.prefeitura.sp.gov.br"
+    catalogo_metadados: "https://metadados.geosampa.prefeitura.sp.gov.br/geonetwork/"
+    wfs: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    wms: "http://wms.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wms"
+    licenca: "A confirmar. Uma notícia da SMUL (2023) diz que os dados podem ser usados para qualquer finalidade citando a fonte, mas não consegui abrir a página oficial de licença e o campo de licença dos metadados está vazio."
+    atribuicao: "Fonte: Prefeitura do Município de São Paulo / SMUL, GeoSampa"
+  ibge:
+    nome: "IBGE - Geociências (malhas territoriais)"
+    orgao: "Instituto Brasileiro de Geografia e Estatística (IBGE)"
+    portal: "https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/26565-malhas-de-setores-censitarios-divisoes-intramunicipais.html"
+    ftp: "https://geoftp.ibge.gov.br/"
+    licenca: "A confirmar. Dados abertos do IBGE, falta conferir o termo de uso na página do produto."
+    atribuicao: "Fonte: IBGE"
+  sptrans:
+    nome: "SPTrans - Desenvolvedores (GTFS estático)"
+    orgao: "São Paulo Transporte S.A. (SPTrans)"
+    portal: "https://www.sptrans.com.br/desenvolvedores/"
+    licenca: "A confirmar. Termos de uso e se o download exige cadastro."
+    atribuicao: "Fonte: SPTrans"
+
+camadas:
+  # camadas de teste de outubro
+  - id: limite_municipal
+    ativa: true
+    papel: limite                 # as outras camadas são recortadas por ela
+    fonte: ibge
+    titulo: "Limite municipal de São Paulo"
+    descricao: "Limite do município de São Paulo (código IBGE 3550308), extraído da malha municipal de SP."
+    tipo_acesso: download_zip
+    url_origem: "https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/15774-malhas.html"
+    url: "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2024/UFs/SP/SP_Municipios_2024.zip"
+    arquivo_vetor: "*.shp"
+    formato: "Shapefile (ZIP)"
+    filtro_atributo: { atributo: CD_MUN, valor: "3550308" }
+    crs_original: 4674
+    geometria: poligono
+    cobertura_fonte: ampla        # o arquivo traz os 645 municípios de SP
+    data_referencia: "2024"
+    periodicidade: "anual"
+    area_km2_esperada: [1400, 1650]
+    min_registros: 1
+    max_registros: 1
+    estilo: { preenchimento: "#FFFFFF", opacidade: 0.0, linha: "#1F3A5F", largura: 2.0 }
+    verificacao: testado
+    observacao: "Download de 02/11/2026 deu 645 municípios; o filtro CD_MUN = 3550308 deixa 1 registro com 1521 km2."
+
+  - id: ubs_unidades_saude
+    ativa: true
+    fonte: geosampa
+    titulo: "UBS, postos e centros de saúde"
+    descricao: "Unidades básicas de saúde, postos e centros de saúde da cidade, conforme a camada do GeoSampa."
+    orgao_produtor: "Prefeitura do Município de São Paulo, Secretaria Municipal da Saúde (SMS) e Secretaria Estadual de Saúde (SES); distribuição pela Geoinfo/SMUL"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:equipamento_saude_ubs_posto_centro"
+    wfs_versao: "1.0.0"
+    url_metadados: "https://metadados.geosampa.prefeitura.sp.gov.br/geonetwork/srv/api/records/bc44ee6c-e973-4670-b912-9ac8d64b9f56"
+    formato: "WFS (GeoJSON)"
+    crs_original: 31983
+    geometria: ponto
+    cobertura_fonte: municipal    # já é municipal, então só filtra e não recorta
+    data_referencia: "revisão do metadado em 18/06/2025"
+    periodicidade: "anual"
+    min_registros: 100
+    estilo: { preenchimento: "#C0392B", opacidade: 0.9, linha: "#FFFFFF", tamanho: 7 }
+    verificacao: testado
+    observacao: "483 feições em 02/11/2026, todas dentro do limite. O metadado informa que a camada só traz a data mais recente."
+
+  # camadas previstas para novembro e dezembro
+  - id: distritos
+    ativa: false
+    fonte: geosampa
+    titulo: "Distritos municipais"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:distrito_municipal"
+    wfs_versao: "2.0.0"
+    geometria: poligono
+    cobertura_fonte: municipal
+    verificacao: typename_confirmado
+    observacao: "96 feições. A paginação do WFS 2.0 foi testada com esta camada."
+
+  - id: subprefeituras
+    ativa: false
+    fonte: geosampa
+    titulo: "Subprefeituras"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:subprefeitura"
+    wfs_versao: "2.0.0"
+    geometria: poligono
+    cobertura_fonte: municipal
+    data_referencia: "revisões até 27/10/2026 (metadados do GeoSampa)"
+    verificacao: typename_confirmado
+    observacao: "32 feições. Existe também geoportal:sede_subprefeitura, que não é a mesma coisa."
+
+  - id: logradouros
+    ativa: false
+    fonte: geosampa
+    titulo: "Logradouros"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:segmento_logradouro"
+    wfs_versao: "2.0.0"
+    geometria: linha
+    cobertura_fonte: municipal
+    verificacao: typename_confirmado
+    observacao: "O servidor informa 10200 feições, o que parece pouco para a cidade toda. Conferir a cobertura antes de ativar."
+
+  - id: zoneamento
+    ativa: false
+    fonte: geosampa
+    titulo: "Zoneamento"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:perimetro_zona_lei_18177_24"
+    wfs_versao: "2.0.0"
+    geometria: poligono
+    cobertura_fonte: municipal
+    verificacao: typename_confirmado
+    observacao: "61784 feições, é a camada mais pesada da lista. Há outra versão em geoportal:perimetro_zona_lei_18081_24; decidir qual é a vigente."
+
+  - id: escolas
+    ativa: false
+    fonte: geosampa
+    titulo: "Escolas da rede pública"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:equipamento_educacao_rede_publica"
+    wfs_versao: "2.0.0"
+    geometria: ponto
+    cobertura_fonte: municipal
+    verificacao: typename_confirmado
+    observacao: "1597 feições (ensino fundamental e médio). A educação infantil está em geoportal:equipamento_educacao_infantil_rede_publica, com 3041."
+
+  - id: parques
+    ativa: false
+    fonte: geosampa
+    titulo: "Parques e unidades de conservação"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:GEOSAMPA_cadparcs_parque_unidade_conservacao"
+    wfs_versao: "2.0.0"
+    geometria: poligono
+    cobertura_fonte: municipal
+    verificacao: a_confirmar
+    observacao: "O typeName está no GetCapabilities mas não consegui contar as feições (o servidor bloqueou a consulta). Alternativa: geoportal:pde_parque_municipal, com 280 feições."
+
+  - id: hidrografia
+    ativa: false
+    fonte: geosampa
+    titulo: "Massas d'água"
+    tipo_acesso: wfs
+    wfs_url: "http://wfs.geosampa.prefeitura.sp.gov.br/geoserver/geoportal/wfs"
+    type_name: "geoportal:massa_d_agua"
+    wfs_versao: "2.0.0"
+    geometria: poligono
+    cobertura_fonte: municipal
+    verificacao: a_confirmar
+    observacao: "3973 polígonos. Não achei uma camada só de rios; geoportal:drenagem tem 28366 linhas, mas pode ser a rede de drenagem urbana. Combinar com o orientador."
+
+  - id: setores_censitarios
+    ativa: false
+    fonte: ibge
+    titulo: "Setores censitários 2022 de São Paulo"
+    tipo_acesso: download_zip
+    url: "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_de_setores_censitarios__divisoes_intramunicipais/censo_2022/setores/shp/UF/SP_setores_CD2022.zip"
+    filtro_atributo: { atributo: CD_MUN, valor: "3550308" }
+    geometria: poligono
+    cobertura_fonte: ampla
+    verificacao: a_confirmar
+    observacao: "O arquivo existe (80 MB, modificado em 12/11/2024), mas ainda não foi aberto para conferir o nome do atributo. O GeoSampa também tem a camada (setor_censitario_2022, 27301 feições); usar só uma das duas e anotar no catálogo."
+
+  - id: paradas_onibus
+    ativa: false
+    fonte: sptrans
+    titulo: "Paradas de ônibus (GTFS stops)"
+    tipo_acesso: gtfs
+    url: null
+    gtfs_arquivo: stops.txt
+    geometria: ponto
+    cobertura_fonte: ampla
+    crs_original: 4326
+    verificacao: a_confirmar
+    observacao: "Falta confirmar se o download do GTFS exige cadastro. O GeoSampa tem geoportal:ponto_onibus (22580 feições) como alternativa."
+
+  - id: trajetos_onibus
+    ativa: false
+    fonte: sptrans
+    titulo: "Trajetos de ônibus (GTFS shapes)"
+    tipo_acesso: gtfs
+    url: null
+    gtfs_arquivo: shapes.txt
+    geometria: linha
+    cobertura_fonte: ampla
+    crs_original: 4326
+    verificacao: a_confirmar
+    observacao: "Linhas montadas a partir do shapes.txt e recortadas pelo limite. O GeoSampa tem geoportal:linha_onibus (2324 feições)."

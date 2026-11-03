@@ -1,0 +1,23 @@
+# Só o PostGIS, para uso local. O GeoServer do laboratório já está instalado e não sobe por aqui.
+# Uso: cp .env.example .env && docker compose up -d
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: geosp-postgis
+    environment:
+      POSTGRES_DB: ${PG_DB:-geosp}
+      POSTGRES_USER: ${PG_USER:-coletor}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?defina PG_PASSWORD no .env}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - geosp_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-coletor} -d ${PG_DB:-geosp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  geosp_pgdata:

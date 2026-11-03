@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.part
+
+# dados e saídas geradas pelo coletor
+dados/
+logs/
+catalogo/
+
+# documentos, relatórios e evidências
+docs/
+*.docx
+~$*
